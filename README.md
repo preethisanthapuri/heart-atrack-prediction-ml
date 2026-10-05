@@ -15,7 +15,8 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 7 — Feature engineering and feature selection:** Complete. Compared all 30 one-hot/preprocessed features with four fold-local selection methods, each retaining 15 encoded features, for Logistic Regression and KNN. Mutual-information selection with Logistic Regression gave mean CV ROC-AUC 0.914 ± 0.040 and PR-AUC 0.926 ± 0.022, versus 0.908 ± 0.039 and 0.919 ± 0.027 using all features; its accuracy was lower (0.847 ± 0.060 vs 0.859 ± 0.045). The small metric differences do not establish a meaningful improvement. No manually derived clinical interaction or ratio features were added because feature definitions, units, and provenance are not verified.
 - **Phase 8 — Hyperparameter optimization:** Complete. GridSearchCV tuned Logistic Regression (10 configurations) and RBF SVC (40 configurations); RandomizedSearchCV evaluated 12 KNN configurations. Searches used five-fold stratified CV with preprocessing fitted inside each fold and mean ROC-AUC as the predeclared refit criterion. The best search configurations had CV ROC-AUC estimates of 0.911 (Logistic Regression), 0.909 (SVC), and 0.912 (KNN). These are hyperparameter-selection scores and are likely optimistic; they are not independent performance estimates.
 - **Phase 9 — Ensemble learning:** Complete. Evaluated soft voting (Logistic Regression, KNN, Random Forest) and stacking (Logistic Regression, KNN, RBF SVC) against individual baselines on identical training-only stratified folds. Soft voting had mean ROC-AUC 0.913 ± 0.045, compared with 0.908 ± 0.039 for Logistic Regression; its mean accuracy was 0.851, below KNN at 0.867. Stacking had ROC-AUC 0.909 ± 0.040 and accuracy 0.847. Evidence does not establish a broad or reliable ensemble improvement; soft voting remains an experimental comparator only.
-- **Phase 10 and later:** Not started.
+- **Phase 10 — Probability calibration:** Complete. Compared uncalibrated probabilities with sigmoid and isotonic `CalibratedClassifierCV` using outer five-fold out-of-fold predictions and three-fold calibration internal to each outer training fold. Brier score and ROC-AUC were recorded, with calibration curves. Calibration did not help consistently: raw soft voting had the lowest Brier score (0.113), while sigmoid reduced Random Forest Brier from 0.123 to 0.120 and isotonic reduced Logistic Regression Brier from 0.117 to 0.116. The other model-method pairs were unchanged or worse. No single calibration method is retained as universally preferable.
+- **Phase 11 and later:** Not started.
 
 ## Dataset
 
@@ -43,6 +44,7 @@ python run_model_evaluation.py
 python run_feature_selection.py
 python run_tuning.py
 python run_ensemble.py
+python run_calibration.py
 python -m unittest discover -s tests -v
 ```
 
@@ -57,6 +59,8 @@ python -m unittest discover -s tests -v
 `run_tuning.py` searches training rows only. Grid search covers Logistic Regression and RBF SVC; randomized search samples 12 KNN configurations. The pipelines fit preprocessing within each CV training fold. Mean ROC-AUC is the predeclared refit criterion; accuracy, F1, and average precision are also recorded. It saves each search candidate to `results/tables/tuning_results.csv` and best settings to `results/tables/tuning_summary.csv`. The reported best CV scores are selected from multiple candidates on these folds and must not be interpreted as unbiased tuned-model performance. The holdout is not loaded or scored.
 
 `run_ensemble.py` compares soft voting (Logistic Regression, KNN, Random Forest) and stacking (Logistic Regression, KNN, RBF SVC) with the constituent individual models and Random Forest. It evaluates all candidates on the same training-only stratified folds, fits preprocessing within each fold, and uses stacking's internal CV only inside the outer training fold. It saves summary and per-fold metric tables to `results/tables/ensemble_comparison.csv` and `results/tables/ensemble_folds.csv`. No holdout records are used.
+
+`run_calibration.py` compares native uncalibrated probabilities against sigmoid and isotonic `CalibratedClassifierCV` for Logistic Regression, KNN, Random Forest, and soft voting. It obtains out-of-fold predictions using five outer stratified folds, with three-fold calibration contained in each outer training fold. It writes Brier score and ROC-AUC summaries to `results/tables/calibration.csv`, binned calibration-curve points to `results/tables/calibration_curve.csv`, and `results/figures/calibration/calibration_curves.png`. It does not use the holdout or choose a threshold.
 
 The CSV dataset, fitted model/pipeline artifacts, split metadata, and generated EDA results are excluded from GitHub.
 
@@ -90,6 +94,10 @@ Model search was limited to Logistic Regression and RBF SVC (among the strongest
 
 Using the same five stratified training folds as Phase 6, soft voting (Logistic Regression, KNN, and Random Forest) produced accuracy 0.851 ± 0.053, ROC-AUC 0.913 ± 0.045, and average precision 0.919 ± 0.038. Logistic Regression alone produced 0.859 ± 0.045, 0.908 ± 0.039, and 0.919 ± 0.027, respectively. Stacking (Logistic Regression, KNN, and RBF SVC) produced accuracy 0.847 ± 0.060 and ROC-AUC 0.909 ± 0.040. KNN had the highest mean accuracy at 0.867 ± 0.064. Thus soft voting's small mean ROC-AUC increase comes with lower accuracy and overlapping fold variability; stacking did not show an overall advantage. These results do not establish statistical significance or generalization. No ensemble is selected as the final model.
 
+## Phase 10 calibration design and observed results
+
+The calibration experiment generated outer-fold predictions on the 241 training rows; sigmoid/isotonic calibrators were fit only within each outer training fold using three-fold CV. Brier score is lower-is-better; ROC-AUC tracks ranking and is included to monitor discrimination changes. Mean fold Brier / ROC-AUC results were: Logistic Regression uncalibrated 0.117 / 0.908, sigmoid 0.117 / 0.908, isotonic 0.116 / 0.906; KNN uncalibrated 0.122 / 0.897, sigmoid 0.126 / 0.899, isotonic 0.127 / 0.894; Random Forest uncalibrated 0.123 / 0.902, sigmoid 0.120 / 0.899, isotonic 0.122 / 0.894; soft voting uncalibrated 0.113 / 0.913, sigmoid 0.115 / 0.908, isotonic 0.114 / 0.904. The small sample and fold variability do not establish a reliable method winner. Calibration curves use fixed-width probability bins; sparse bins make their shape noisy. No clinical threshold is applied.
+
 ## Key files
 
 - `src/data_loader.py` — read-only CSV loading
@@ -102,8 +110,9 @@ Using the same five stratified training folds as Phase 6, soft voting (Logistic 
 - `src/feature_selection.py` — fold-local feature-selection experiment and stability summaries
 - `src/tuning.py` — training-only grid and randomized hyperparameter searches
 - `src/ensemble.py` — fold-local soft voting and stacking comparisons
-- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py` — phase runners
-- `tests/` — Phase 2, 4, 5, 6, 7, 8, and 9 tests
+- `src/calibration.py` — nested out-of-fold probability calibration and reliability-curve evaluation
+- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py`, `run_calibration.py` — phase runners
+- `tests/` — Phase 2, 4, 5, 6, 7, 8, 9, and 10 tests
 
 ## Limitations
 
