@@ -8,13 +8,11 @@ import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
-from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import average_precision_score, brier_score_loss, log_loss, roc_auc_score
+from sklearn.metrics import brier_score_loss, log_loss
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 from sklearn.base import clone
 from functools import partial
 
@@ -173,3 +171,4 @@ def run_ablation_experiment(
                              **{f"{m}_fold_mean": float(stage_folds[m].mean()) for m in ["accuracy", "sensitivity", "specificity", "f1", "roc_auc", "pr_auc", "brier"]},
                              **{f"{m}_fold_std": float(stage_folds[m].std(ddof=1)) for m in ["accuracy", "sensitivity", "specificity", "f1", "roc_auc", "pr_auc", "brier"]}})
     return pd.DataFrame(summary_rows), fold_table, predictions
+
