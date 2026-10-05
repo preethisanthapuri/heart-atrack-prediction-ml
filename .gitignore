@@ -22,3 +22,4 @@ results/tables/statistical_tests.csv
 results/tables/statistical_analysis.md
 models/*.joblib
 *.joblib
+results/

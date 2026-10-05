@@ -80,7 +80,7 @@ Small group sizes include n=9 for the 70+ bin. Target direction, subgroup codebo
 - `results/figures/final_results/ablation_tradeoffs.png` and `.pdf` — accuracy, ROC-AUC, Brier comparison with outer-fold variability.
 - `results/figures/final_results/baseline_cv_roc_auc.png` and `.pdf` — baseline training CV ROC-AUC with fold variability.
 
-The figure catalog contains 22 generated figures across EDA, model evaluation, calibration, SHAP, and final results.
+The figure catalog contains 19 generated figures across EDA, model evaluation, calibration, SHAP, and final results.
 
 The full tuning, feature-selection, calibration, uncertainty, external, ablation, and subgroup tables remain under `results/tables/`. Patient-level inputs and fitted model binaries are local-only/ignored by Git.
 
