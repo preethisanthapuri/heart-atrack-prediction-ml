@@ -14,7 +14,8 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 6 — Model evaluation and cross-validation:** Complete. Seven baseline classifiers were evaluated with accuracy, precision, class-1 recall (sensitivity), class-0 specificity, F1, ROC-AUC, and average precision (PR-AUC). Five-fold stratified cross-validation ran on the 241-row training partition, with preprocessing refit inside every fold. Logistic Regression had CV ROC-AUC 0.908 ± 0.039 and accuracy 0.859 ± 0.045; KNN had the highest mean CV accuracy (0.867 ± 0.064), while Logistic Regression had the highest mean ROC-AUC. The holdout set produced descriptive results only because it had already been screened for accuracy during Phase 5.
 - **Phase 7 — Feature engineering and feature selection:** Complete. Compared all 30 one-hot/preprocessed features with four fold-local selection methods, each retaining 15 encoded features, for Logistic Regression and KNN. Mutual-information selection with Logistic Regression gave mean CV ROC-AUC 0.914 ± 0.040 and PR-AUC 0.926 ± 0.022, versus 0.908 ± 0.039 and 0.919 ± 0.027 using all features; its accuracy was lower (0.847 ± 0.060 vs 0.859 ± 0.045). The small metric differences do not establish a meaningful improvement. No manually derived clinical interaction or ratio features were added because feature definitions, units, and provenance are not verified.
 - **Phase 8 — Hyperparameter optimization:** Complete. GridSearchCV tuned Logistic Regression (10 configurations) and RBF SVC (40 configurations); RandomizedSearchCV evaluated 12 KNN configurations. Searches used five-fold stratified CV with preprocessing fitted inside each fold and mean ROC-AUC as the predeclared refit criterion. The best search configurations had CV ROC-AUC estimates of 0.911 (Logistic Regression), 0.909 (SVC), and 0.912 (KNN). These are hyperparameter-selection scores and are likely optimistic; they are not independent performance estimates.
-- **Phase 9 and later:** Not started.
+- **Phase 9 — Ensemble learning:** Complete. Evaluated soft voting (Logistic Regression, KNN, Random Forest) and stacking (Logistic Regression, KNN, RBF SVC) against individual baselines on identical training-only stratified folds. Soft voting had mean ROC-AUC 0.913 ± 0.045, compared with 0.908 ± 0.039 for Logistic Regression; its mean accuracy was 0.851, below KNN at 0.867. Stacking had ROC-AUC 0.909 ± 0.040 and accuracy 0.847. Evidence does not establish a broad or reliable ensemble improvement; soft voting remains an experimental comparator only.
+- **Phase 10 and later:** Not started.
 
 ## Dataset
 
@@ -41,6 +42,7 @@ python -m unittest tests.test_models -v
 python run_model_evaluation.py
 python run_feature_selection.py
 python run_tuning.py
+python run_ensemble.py
 python -m unittest discover -s tests -v
 ```
 
@@ -53,6 +55,8 @@ python -m unittest discover -s tests -v
 `run_feature_selection.py` compares all one-hot-expanded inputs with 15-feature selections using mutual information, ANOVA SelectKBest, Logistic Regression RFE, and an Extra Trees model-based selector. It evaluates both Logistic Regression and KNN using the Phase 6 stratified folds on training data only. Preprocessing and feature selection are refitted inside every fold. It saves CV metrics to `results/tables/feature_selection_comparison.csv` and selector rank/fold-stability information to `results/tables/feature_selection.csv`. The holdout set is not used by this experiment.
 
 `run_tuning.py` searches training rows only. Grid search covers Logistic Regression and RBF SVC; randomized search samples 12 KNN configurations. The pipelines fit preprocessing within each CV training fold. Mean ROC-AUC is the predeclared refit criterion; accuracy, F1, and average precision are also recorded. It saves each search candidate to `results/tables/tuning_results.csv` and best settings to `results/tables/tuning_summary.csv`. The reported best CV scores are selected from multiple candidates on these folds and must not be interpreted as unbiased tuned-model performance. The holdout is not loaded or scored.
+
+`run_ensemble.py` compares soft voting (Logistic Regression, KNN, Random Forest) and stacking (Logistic Regression, KNN, RBF SVC) with the constituent individual models and Random Forest. It evaluates all candidates on the same training-only stratified folds, fits preprocessing within each fold, and uses stacking's internal CV only inside the outer training fold. It saves summary and per-fold metric tables to `results/tables/ensemble_comparison.csv` and `results/tables/ensemble_folds.csv`. No holdout records are used.
 
 The CSV dataset, fitted model/pipeline artifacts, split metadata, and generated EDA results are excluded from GitHub.
 
@@ -82,6 +86,10 @@ The input schema expands to 30 features after one-hot encoding. A fixed budget o
 
 Model search was limited to Logistic Regression and RBF SVC (among the strongest CV ROC-AUC results in Phase 6) and KNN (highest Phase 6 mean CV accuracy). Searches use five-fold stratification and a pipeline that fits preprocessing within each fold. GridSearchCV evaluated 10 Logistic Regression and 40 SVC configurations; RandomizedSearchCV sampled 12 KNN configurations. Best mean CV ROC-AUC settings were Logistic Regression: 0.911 (C=0.1, class_weight=balanced); SVC: 0.909 (C=100, gamma=0.001, no class weighting); KNN: 0.912 (n_neighbors=9, Manhattan distance, distance weighting). Since each score is the maximum selected from a search over candidates, these values are optimization criteria with selection optimism, not independent performance estimates. No final estimator is designated in this phase.
 
+## Phase 9 ensemble design and observed results
+
+Using the same five stratified training folds as Phase 6, soft voting (Logistic Regression, KNN, and Random Forest) produced accuracy 0.851 ± 0.053, ROC-AUC 0.913 ± 0.045, and average precision 0.919 ± 0.038. Logistic Regression alone produced 0.859 ± 0.045, 0.908 ± 0.039, and 0.919 ± 0.027, respectively. Stacking (Logistic Regression, KNN, and RBF SVC) produced accuracy 0.847 ± 0.060 and ROC-AUC 0.909 ± 0.040. KNN had the highest mean accuracy at 0.867 ± 0.064. Thus soft voting's small mean ROC-AUC increase comes with lower accuracy and overlapping fold variability; stacking did not show an overall advantage. These results do not establish statistical significance or generalization. No ensemble is selected as the final model.
+
 ## Key files
 
 - `src/data_loader.py` — read-only CSV loading
@@ -93,8 +101,9 @@ Model search was limited to Logistic Regression and RBF SVC (among the strongest
 - `src/evaluation.py` — baseline screening, holdout metrics, cross-validation, and plots
 - `src/feature_selection.py` — fold-local feature-selection experiment and stability summaries
 - `src/tuning.py` — training-only grid and randomized hyperparameter searches
-- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py` — phase runners
-- `tests/` — Phase 2, 4, 5, 6, 7, and 8 tests
+- `src/ensemble.py` — fold-local soft voting and stacking comparisons
+- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py` — phase runners
+- `tests/` — Phase 2, 4, 5, 6, 7, 8, and 9 tests
 
 ## Limitations
 
