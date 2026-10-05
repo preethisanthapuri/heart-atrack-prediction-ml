@@ -21,7 +21,8 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 13 — External validation:** Complete as an exploratory site-level test on the UCI Hungarian cohort (294 rows), using the frozen Phase 6 Logistic Regression model and Phase 4 preprocessing. On project class labels, accuracy was 0.833, ROC-AUC 0.883, average precision 0.909, and Brier score 0.130 at the fixed 0.5 cutoff. The cohort has extensive missingness (slope 190/294, ca 291/294, thal 266/294), with primary-compatible missing sentinels and the saved training-fitted imputer applied. Code inspection and a Cleveland-format feature comparison indicate `output=1` aligns with UCI `num=0` (absence of angiographic disease), not disease presence; the class counts differ by one record and the original supplied-file provenance remains unconfirmed. These metrics are therefore reported only for dataset codes and do not establish heart-attack/risk prediction or clinical validity.
 - **Phase 14 — Ablation and subgroup analysis:** Complete. Compared six staged configurations using five-fold stratified out-of-fold predictions on the 241-row training partition; the saved 61-row holdout was excluded. Logistic Regression with 15 fold-local mutual-information features had the highest pooled ROC-AUC (0.916) and average precision (0.922). The integrated tuned/selected/calibrated soft vote had lower accuracy (0.834), ROC-AUC (0.885), and higher Brier score (0.126) than simpler candidates. Subgroup metrics were descriptive; sparse groups and unresolved label/codebook prevent fairness conclusions. See `paper/ablation_fairness.md`.
 - **Phase 15 — Final model:** Complete. Selected Stage B (mutual-information SelectKBest, k=15, plus Logistic Regression) based on its best Phase 14 pooled training-only ROC-AUC (0.916), average precision (0.922), and Brier score (0.112), while documenting its lower accuracy/F1 than the all-feature baseline. The raw-input pipeline was refit on all 241 saved training rows; the 61-row holdout was not used. No post-hoc calibration or Stage-B uncertainty method is claimed. See `paper/final_model_selection.md`.
-- **Phase 16 and later:** Not started.
+- **Phase 16 — Web application:** Complete. Added a Flask research interface backed by the saved Stage B raw-input pipeline. It validates all 13 fields and category codes, warns when numeric inputs are outside the observed training range, displays dataset-class probabilities and local Logistic Regression contributions, and explicitly reports that Stage-B uncertainty is not estimated. This is not a medical diagnostic tool. See `app/`.
+- **Phase 17 and later:** Not started.
 
 ## Dataset
 
@@ -55,6 +56,8 @@ python -m unittest tests.test_phase14 -v
 python run_ablation.py
 python -m unittest tests.test_final_model -v
 python run_final_model.py
+python -m unittest tests.test_app -v
+python app/app.py
 python -m unittest discover -s tests -v
 ```
 
@@ -81,6 +84,8 @@ python -m unittest discover -s tests -v
 `run_ablation.py` compares the Logistic Regression baseline, mutual-information selection, inner-fold tuning, Phase 9 soft voting, calibrated voting, and an integrated tuned/selected/calibrated vote. Five outer folds generate OOF predictions using only saved training indices. Preprocessing, feature selection, searches, and calibration are fitted within outer training folds; Stage F reserves a disjoint calibration subset. Tables are written to `results/tables/ablation*.csv` and `results/tables/fairness*.csv`. Stage F did not improve overall performance, so this experiment does not support the full combination as superior. Subgroup output uses dataset class codes and descriptive age bins, not a clinical fairness claim. See `paper/ablation_fairness.md`.
 
 `run_final_model.py` selects Stage B using the recorded Phase 14 training-only OOF comparison and refits the complete preprocessing, mutual-information selector, and Logistic Regression pipeline on the saved 241-row training partition. It does not read or score the saved 61-row holdout. The raw-schema prediction pipeline is saved as `models/final_model.joblib` and its fitted selector as `models/feature_selector.joblib`; evidence and selected feature names are recorded in `results/metrics/final_model.json`. The final model returns dataset-class probabilities without selecting a medical threshold. Calibration and uncertainty claims from other model configurations are not transferred to this selected model. See `paper/final_model_selection.md`.
+
+`python app/app.py` starts the local Flask app at `http://127.0.0.1:5000/`. Generate the final model first with `python run_final_model.py`. The form requires all 13 fields, validates values against the saved training schema, and flags numeric values beyond the observed training range. The API returns probabilities for numeric dataset classes and model-local Logistic Regression contributions in log-odds units; these contributions are not causal. Uncertainty is reported as unavailable for this final model. The app stores no submitted values and binds to localhost by default. It is for research and educational decision-support purposes, not diagnosis.
 
 The CSV dataset, fitted model/pipeline artifacts, split metadata, and generated EDA results are excluded from GitHub.
 
@@ -140,6 +145,8 @@ The soft-voting candidate was fit on each outer fold's model-fit subset, while a
 - `src/external_validation.py` — external-source schema/category mapping and frozen-model scoring
 - `src/ablation.py`, `src/fairness.py` — staged training-fold ablation and descriptive subgroup metrics
 - `src/final_model.py` — evidence-based candidate selection and training-only final refit
+- `app/app.py`, `app/templates/index.html`, `app/static/` — local Flask form, validation API, and interface assets
+- `tests/test_app.py` — Flask page, prediction, and invalid-input checks
 - `paper/ablation_fairness.md` — Phase 14 design, observed findings, and limitations
 - `paper/final_model_selection.md` — Phase 15 selection evidence, fit boundary, and limitations
 - `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py`, `run_calibration.py`, `run_uncertainty.py`, `run_explainability.py`, `run_external_validation.py` — phase runners

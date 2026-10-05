@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Research interface for a dataset-coded cardiovascular classifier">
+  <title>Heart-Atrack | Research Model</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Heart-Atrack home"><span class="brand-mark">H</span><span>HEART-ATRACK <small>RESEARCH INTERFACE</small></span></a>
+      <span class="model-status"><i></i> {% if model_error %}Model unavailable{% else %}Stage B · Logistic Regression{% endif %}</span>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow">MACHINE LEARNING · RESEARCH DEMONSTRATION</p>
+      <h1>Explore a model<br><em>class estimate.</em></h1>
+      <p class="hero-copy">Enter the dataset’s feature values to inspect the saved model’s class probabilities and local model contributions.</p>
+    </section>
+
+    {% if model_error %}
+    <aside class="setup-notice" role="alert"><strong>Model setup required</strong><p>{{ model_error }}</p></aside>
+    {% endif %}
+
+    <section class="workspace">
+      <form id="prediction-form" class="input-panel" novalidate>
+        <div class="panel-heading">
+          <div><p class="eyebrow">INPUTS</p><h2>Dataset features</h2></div>
+          <span class="field-count">13 REQUIRED</span>
+        </div>
+        <p class="field-hint">Use the numeric measurements and integer category codes from the supplied dataset.</p>
+        <div class="field-grid">
+          {% for field in fields %}
+          <label class="field" for="{{ field }}">
+            <span>{{ labels[field] }}</span>
+            {% if field in categorical_fields %}
+            <select id="{{ field }}" name="{{ field }}" required>
+              <option value="" selected disabled>Select a code</option>
+              {% if metadata %}
+                {% for code in metadata.input_schema.categorical_codes[field] %}
+                <option value="{{ code }}">Code {{ code }}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+            {% else %}
+            <input id="{{ field }}" name="{{ field }}" type="number" step="any" required inputmode="decimal" placeholder="Enter {{ field }}">
+            {% if metadata and field in metadata.input_schema.numeric %}
+            <small>Observed training range: {{ metadata.input_schema.numeric[field].training_min }}–{{ metadata.input_schema.numeric[field].training_max }}</small>
+            {% endif %}
+            {% endif %}
+          </label>
+          {% endfor %}
+        </div>
+        <button id="submit-button" type="submit" {% if model_error %}disabled{% endif %}><span>Generate estimate</span><span aria-hidden="true">↗</span></button>
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+        <p class="disclaimer">This application is intended for research and educational decision-support purposes and is not a medical diagnostic tool.</p>
+      </form>
+
+      <section id="result-panel" class="result-panel" aria-live="polite" aria-busy="false">
+        <div class="result-empty" id="result-empty">
+          <div class="empty-icon">↗</div>
+          <p class="eyebrow">MODEL OUTPUT</p>
+          <h2>Your estimate<br>will appear here.</h2>
+          <p>The output represents dataset class codes. Their clinical meaning is unverified.</p>
+        </div>
+        <div id="result-content" hidden>
+          <div class="panel-heading result-heading"><div><p class="eyebrow">MODEL OUTPUT</p><h2>Class estimate</h2></div><span class="output-tag">NOT A DIAGNOSIS</span></div>
+          <div class="class-callout"><span>More likely dataset code</span><strong id="predicted-class">—</strong></div>
+          <div class="probability-list">
+            <div class="prob-row"><div><span>Class 1</span><strong id="p-class-1">—</strong></div><div class="meter"><i id="bar-class-1"></i></div></div>
+            <div class="prob-row"><div><span>Class 0</span><strong id="p-class-0">—</strong></div><div class="meter muted"><i id="bar-class-0"></i></div></div>
+          </div>
+          <p class="uncertainty-note"><span>ⓘ</span> <strong>Uncertainty:</strong> Not estimated for this final model.</p>
+          <div class="explanation"><p class="eyebrow">LOCAL MODEL CONTRIBUTIONS</p><h3>What influenced this output</h3><p class="subtle">Largest logistic-model contributions, shown in log-odds units.</p><ul id="explanation-list"></ul><p class="explanation-note">These describe model associations for this input; they are not causal effects or clinical explanations.</p></div>
+          <div id="warning-list" class="warning-list" hidden></div>
+        </div>
+      </section>
+    </section>
+    <footer><span>HEART-ATRACK PREDICTION ML</span><span>Research &amp; education only · Dataset class meaning unverified</span></footer>
+  </main>
+</body>
+</html>
