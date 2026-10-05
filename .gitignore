@@ -9,3 +9,5 @@ data/raw/*.csv
 data/processed/*.csv
 results/metrics/*.json
 results/tables/*.csv
+results/tables/dataset_audit.*
+results/tables/cleaning_report.md
