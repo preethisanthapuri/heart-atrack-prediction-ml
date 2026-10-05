@@ -20,7 +20,8 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 12 — SHAP explainability:** Complete. `shap.LinearExplainer` explained the saved Phase 6 Logistic Regression model on its 241 training rows using a deterministic 100-row training background and the saved training-fitted preprocessor. Global mean absolute SHAP values ranked `cp_0`, `caa_0`, `thall_2`, `chol`, and `oldpeak` highest for this fitted model (log-odds scale). The selected training row (dataset index 110) had class-1 probability 0.649; its largest absolute contributions were `chol` (-0.880 log-odds), `trtbps` (-0.729), and `cp_0` (-0.684). Unit tests confirmed SHAP additivity to the model decision function. These are model-output associations, not causal or clinical effects; explanations were generated on training rows and do not validate generalization.
 - **Phase 13 — External validation:** Complete as an exploratory site-level test on the UCI Hungarian cohort (294 rows), using the frozen Phase 6 Logistic Regression model and Phase 4 preprocessing. On project class labels, accuracy was 0.833, ROC-AUC 0.883, average precision 0.909, and Brier score 0.130 at the fixed 0.5 cutoff. The cohort has extensive missingness (slope 190/294, ca 291/294, thal 266/294), with primary-compatible missing sentinels and the saved training-fitted imputer applied. Code inspection and a Cleveland-format feature comparison indicate `output=1` aligns with UCI `num=0` (absence of angiographic disease), not disease presence; the class counts differ by one record and the original supplied-file provenance remains unconfirmed. These metrics are therefore reported only for dataset codes and do not establish heart-attack/risk prediction or clinical validity.
 - **Phase 14 — Ablation and subgroup analysis:** Complete. Compared six staged configurations using five-fold stratified out-of-fold predictions on the 241-row training partition; the saved 61-row holdout was excluded. Logistic Regression with 15 fold-local mutual-information features had the highest pooled ROC-AUC (0.916) and average precision (0.922). The integrated tuned/selected/calibrated soft vote had lower accuracy (0.834), ROC-AUC (0.885), and higher Brier score (0.126) than simpler candidates. Subgroup metrics were descriptive; sparse groups and unresolved label/codebook prevent fairness conclusions. See `paper/ablation_fairness.md`.
-- **Phase 15 and later:** Not started.
+- **Phase 15 — Final model:** Complete. Selected Stage B (mutual-information SelectKBest, k=15, plus Logistic Regression) based on its best Phase 14 pooled training-only ROC-AUC (0.916), average precision (0.922), and Brier score (0.112), while documenting its lower accuracy/F1 than the all-feature baseline. The raw-input pipeline was refit on all 241 saved training rows; the 61-row holdout was not used. No post-hoc calibration or Stage-B uncertainty method is claimed. See `paper/final_model_selection.md`.
+- **Phase 16 and later:** Not started.
 
 ## Dataset
 
@@ -52,6 +53,8 @@ python run_calibration.py
 python run_uncertainty.py
 python -m unittest tests.test_phase14 -v
 python run_ablation.py
+python -m unittest tests.test_final_model -v
+python run_final_model.py
 python -m unittest discover -s tests -v
 ```
 
@@ -76,6 +79,8 @@ python -m unittest discover -s tests -v
 `run_external_validation.py` applies the frozen Phase 6 model to the local UCI Hungarian site file in `data/external/uci_heart_disease_hungarian.data`. It does not refit, recalibrate, or tune the model. The source code crosswalk maps the UCI feature and target encodings into the supplied dataset's apparent Cleveland-derived coding; `paper/external_validation.md` documents the mappings and the one-record target-count discrepancy. It saves aggregate metrics and a source-data SHA-256, not row-level predictions. The external cohort has severe missingness in slope, ca, and thal; missing ca/thal sentinels match the supplied file, while remaining missing values use the saved primary-training imputer. This is historical same-family site testing with uncertain primary provenance, not clinical validation.
 
 `run_ablation.py` compares the Logistic Regression baseline, mutual-information selection, inner-fold tuning, Phase 9 soft voting, calibrated voting, and an integrated tuned/selected/calibrated vote. Five outer folds generate OOF predictions using only saved training indices. Preprocessing, feature selection, searches, and calibration are fitted within outer training folds; Stage F reserves a disjoint calibration subset. Tables are written to `results/tables/ablation*.csv` and `results/tables/fairness*.csv`. Stage F did not improve overall performance, so this experiment does not support the full combination as superior. Subgroup output uses dataset class codes and descriptive age bins, not a clinical fairness claim. See `paper/ablation_fairness.md`.
+
+`run_final_model.py` selects Stage B using the recorded Phase 14 training-only OOF comparison and refits the complete preprocessing, mutual-information selector, and Logistic Regression pipeline on the saved 241-row training partition. It does not read or score the saved 61-row holdout. The raw-schema prediction pipeline is saved as `models/final_model.joblib` and its fitted selector as `models/feature_selector.joblib`; evidence and selected feature names are recorded in `results/metrics/final_model.json`. The final model returns dataset-class probabilities without selecting a medical threshold. Calibration and uncertainty claims from other model configurations are not transferred to this selected model. See `paper/final_model_selection.md`.
 
 The CSV dataset, fitted model/pipeline artifacts, split metadata, and generated EDA results are excluded from GitHub.
 
@@ -134,7 +139,9 @@ The soft-voting candidate was fit on each outer fold's model-fit subset, while a
 - `src/explainability.py` — training-partition SHAP global/local explanations for Logistic Regression
 - `src/external_validation.py` — external-source schema/category mapping and frozen-model scoring
 - `src/ablation.py`, `src/fairness.py` — staged training-fold ablation and descriptive subgroup metrics
+- `src/final_model.py` — evidence-based candidate selection and training-only final refit
 - `paper/ablation_fairness.md` — Phase 14 design, observed findings, and limitations
+- `paper/final_model_selection.md` — Phase 15 selection evidence, fit boundary, and limitations
 - `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py`, `run_calibration.py`, `run_uncertainty.py`, `run_explainability.py`, `run_external_validation.py` — phase runners
 - `paper/external_validation.md` — Phase 13 cohort, crosswalk, results, and limitations
 - `tests/` — Phase 2, 4–14 tests
@@ -142,4 +149,3 @@ The soft-voting candidate was fit on each outer fold's model-fit subset, while a
 ## Limitations
 
 The dataset is small and from a single source. Feature definitions, measurement timing, label semantics, and provenance require confirmation. Statistical association, internal cross-validation, a holdout accuracy screen, and an exploratory historical external-site score do not establish a causal relationship, robust generalization, or clinical validity. No prospective or clinical validation has been performed.
-
