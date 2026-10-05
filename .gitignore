@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+.pytest_cache/
+data/raw/*.csv
+data/processed/*.csv
+results/metrics/*.json
+results/tables/*.csv
