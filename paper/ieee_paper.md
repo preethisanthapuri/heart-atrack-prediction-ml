@@ -147,7 +147,7 @@ Future work should first verify the supplied file's provenance and target mappin
 
 [3] C. Krittanawong et al., “Machine learning prediction in cardiovascular diseases: a meta-analysis,” *Scientific Reports*, vol. 10, Art. no. 16057, 2020, doi: 10.1038/s41598-020-72685-1.
 
-[4] “Machine-learning versus traditional approaches for atherosclerotic cardiovascular risk prognostication in primary prevention cohorts: a systematic review and meta-analysis,” *European Heart Journal—Quality of Care and Clinical Outcomes*, vol. 9, no. 4, pp. 310–322, 2023, doi: 10.1093/ehjqcco/qcad017.
+[4] W. Liu, L. Laranjo, H. Klimis, J. Chiang, J. Yue, S. Marschner, J. C. Quiroz, L. Jorm, and C. K. Chow, “Machine-learning versus traditional approaches for atherosclerotic cardiovascular risk prognostication in primary prevention cohorts: a systematic review and meta-analysis,” *European Heart Journal—Quality of Care and Clinical Outcomes*, vol. 9, no. 4, pp. 310–322, 2023, doi: 10.1093/ehjqcco/qcad017.
 
 [5] K. Karthick, S. K. Aruna, R. Samikannu, R. Kuppusamy, Y. Teekaraman, and A. R. Thelkar, “Implementation of a heart disease risk prediction model using machine learning,” *Computational and Mathematical Methods in Medicine*, vol. 2022, Art. no. 6517716, 2022, doi: 10.1155/2022/6517716.
 
