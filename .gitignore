@@ -6,6 +6,8 @@ venv/
 .ipynb_checkpoints/
 .pytest_cache/
 data/raw/*.csv
+data/external/*.data
+data/external/*.csv
 data/processed/*.csv
 results/metrics/*.json
 results/tables/*.csv
