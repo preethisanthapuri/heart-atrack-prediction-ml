@@ -100,6 +100,17 @@ def fit_final_model(
         "uncertainty": "No Stage-B-specific uncertainty method was established; Phase 11 results apply to soft voting only.",
         "selected_feature_count": len(selected_names),
         "selected_transformed_features": selected_names,
+        "input_schema": {
+            "numeric": {
+                column: {"training_min": float(frame.loc[train_indices, column].min()),
+                         "training_max": float(frame.loc[train_indices, column].max())}
+                for column in ["age", "trtbps", "chol", "thalachh", "oldpeak"]
+            },
+            "categorical_codes": {
+                column: sorted(int(value) for value in frame.loc[train_indices, column].dropna().unique())
+                for column in ["sex", "cp", "fbs", "restecg", "exng", "slp", "caa", "thall"]
+            },
+        },
         "pipeline_steps": ["median/mode imputation, standard scaling/one-hot encoding", "mutual-information SelectKBest(k=15)", "Logistic Regression (C=1.0, max_iter=2000)"],
         "phase14_stage_b_pooled_training_oof": {
             metric: float(row_b[metric]) for metric in
@@ -133,3 +144,4 @@ def run_final_model(
         frame, metadata, model_path=model_path, selector_path=selector_path,
         metadata_path=metadata_path, ablation_results_path=ablation_results_path,
     )
+
