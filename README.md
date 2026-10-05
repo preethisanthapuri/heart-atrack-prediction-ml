@@ -22,7 +22,8 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 14 — Ablation and subgroup analysis:** Complete. Compared six staged configurations using five-fold stratified out-of-fold predictions on the 241-row training partition; the saved 61-row holdout was excluded. Logistic Regression with 15 fold-local mutual-information features had the highest pooled ROC-AUC (0.916) and average precision (0.922). The integrated tuned/selected/calibrated soft vote had lower accuracy (0.834), ROC-AUC (0.885), and higher Brier score (0.126) than simpler candidates. Subgroup metrics were descriptive; sparse groups and unresolved label/codebook prevent fairness conclusions. See `paper/ablation_fairness.md`.
 - **Phase 15 — Final model:** Complete. Selected Stage B (mutual-information SelectKBest, k=15, plus Logistic Regression) based on its best Phase 14 pooled training-only ROC-AUC (0.916), average precision (0.922), and Brier score (0.112), while documenting its lower accuracy/F1 than the all-feature baseline. The raw-input pipeline was refit on all 241 saved training rows; the 61-row holdout was not used. No post-hoc calibration or Stage-B uncertainty method is claimed. See `paper/final_model_selection.md`.
 - **Phase 16 — Web application:** Complete. Added a Flask research interface backed by the saved Stage B raw-input pipeline. It validates all 13 fields and category codes, warns when numeric inputs are outside the observed training range, displays dataset-class probabilities and local Logistic Regression contributions, and explicitly reports that Stage-B uncertainty is not estimated. This is not a medical diagnostic tool. See `app/`.
-- **Phase 17 and later:** Not started.
+- **Phase 17 — Testing and final results:** Complete. The complete suite passed (38 tests); the Flask API was smoke-tested against the saved model. The final-results runner reconciles recorded experiment tables with final-model metadata and writes a consolidated evidence CSV, table catalog, publication-ready baseline/ablation figures, machine-readable summary, and `paper/final_results.md`. No model fitting was repeated for this synthesis. All reported evidence is qualified by split, class-code, and provenance limitations.
+- **Phase 18 and later:** Not started.
 
 ## Dataset
 
@@ -57,8 +58,9 @@ python run_ablation.py
 python -m unittest tests.test_final_model -v
 python run_final_model.py
 python -m unittest tests.test_app -v
+python run_tests.py
+python run_final_results.py
 python app/app.py
-python -m unittest discover -s tests -v
 ```
 
 `run_eda.py` reads `data/processed/cleaned_dataset.csv` and writes figures to `results/figures/eda/` and tables/reports to `results/tables/`.
@@ -86,6 +88,8 @@ python -m unittest discover -s tests -v
 `run_final_model.py` selects Stage B using the recorded Phase 14 training-only OOF comparison and refits the complete preprocessing, mutual-information selector, and Logistic Regression pipeline on the saved 241-row training partition. It does not read or score the saved 61-row holdout. The raw-schema prediction pipeline is saved as `models/final_model.joblib` and its fitted selector as `models/feature_selector.joblib`; evidence and selected feature names are recorded in `results/metrics/final_model.json`. The final model returns dataset-class probabilities without selecting a medical threshold. Calibration and uncertainty claims from other model configurations are not transferred to this selected model. See `paper/final_model_selection.md`.
 
 `python app/app.py` starts the local Flask app at `http://127.0.0.1:5000/`. Generate the final model first with `python run_final_model.py`. The form requires all 13 fields, validates values against the saved training schema, and flags numeric values beyond the observed training range. The API returns probabilities for numeric dataset classes and model-local Logistic Regression contributions in log-odds units; these contributions are not causal. Uncertainty is reported as unavailable for this final model. The app stores no submitted values and binds to localhost by default. It is for research and educational decision-support purposes, not diagnosis.
+
+`run_tests.py` executes every `unittest` test under `tests/` and records case IDs, pass/fail counts, Python version, and run time in `results/metrics/test_results.json`. `run_final_results.py` checks that required Phase 1–16 results exist and that final-model metadata agrees with the Phase 14 ablation; it requires a clean saved test summary. It writes `paper/final_results.md`, a tidy caveat-annotated metric catalog, consolidated Stage A–F results, table/figure catalogs, `results/metrics/final_results.json`, and final-results charts in PNG/PDF formats. It only assembles previously recorded experiment outputs and does not retrain models.
 
 The CSV dataset, fitted model/pipeline artifacts, split metadata, and generated EDA results are excluded from GitHub.
 
@@ -145,6 +149,9 @@ The soft-voting candidate was fit on each outer fold's model-fit subset, while a
 - `src/external_validation.py` — external-source schema/category mapping and frozen-model scoring
 - `src/ablation.py`, `src/fairness.py` — staged training-fold ablation and descriptive subgroup metrics
 - `src/final_model.py` — evidence-based candidate selection and training-only final refit
+- `src/final_results.py` — result integrity checks, aggregate tables, plots, and final report
+- `run_tests.py`, `run_final_results.py` — complete project test run and final-results assembly
+- `paper/final_results.md` — consolidated actual results and evaluation limitations
 - `app/app.py`, `app/templates/index.html`, `app/static/` — local Flask form, validation API, and interface assets
 - `tests/test_app.py` — Flask page, prediction, and invalid-input checks
 - `paper/ablation_fairness.md` — Phase 14 design, observed findings, and limitations
