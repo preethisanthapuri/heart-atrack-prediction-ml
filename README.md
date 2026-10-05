@@ -16,7 +16,8 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 8 — Hyperparameter optimization:** Complete. GridSearchCV tuned Logistic Regression (10 configurations) and RBF SVC (40 configurations); RandomizedSearchCV evaluated 12 KNN configurations. Searches used five-fold stratified CV with preprocessing fitted inside each fold and mean ROC-AUC as the predeclared refit criterion. The best search configurations had CV ROC-AUC estimates of 0.911 (Logistic Regression), 0.909 (SVC), and 0.912 (KNN). These are hyperparameter-selection scores and are likely optimistic; they are not independent performance estimates.
 - **Phase 9 — Ensemble learning:** Complete. Evaluated soft voting (Logistic Regression, KNN, Random Forest) and stacking (Logistic Regression, KNN, RBF SVC) against individual baselines on identical training-only stratified folds. Soft voting had mean ROC-AUC 0.913 ± 0.045, compared with 0.908 ± 0.039 for Logistic Regression; its mean accuracy was 0.851, below KNN at 0.867. Stacking had ROC-AUC 0.909 ± 0.040 and accuracy 0.847. Evidence does not establish a broad or reliable ensemble improvement; soft voting remains an experimental comparator only.
 - **Phase 10 — Probability calibration:** Complete. Compared uncalibrated probabilities with sigmoid and isotonic `CalibratedClassifierCV` using outer five-fold out-of-fold predictions and three-fold calibration internal to each outer training fold. Brier score and ROC-AUC were recorded, with calibration curves. Calibration did not help consistently: raw soft voting had the lowest Brier score (0.113), while sigmoid reduced Random Forest Brier from 0.123 to 0.120 and isotonic reduced Logistic Regression Brier from 0.117 to 0.116. The other model-method pairs were unchanged or worse. No single calibration method is retained as universally preferable.
-- **Phase 11 and later:** Not started.
+- **Phase 11 — Uncertainty-aware prediction:** Complete. Evaluated split-conformal class sets from soft-voting probabilities with 90% and 80% nominal coverage, plus confidence-based risk-coverage. At 90% nominal coverage, observed out-of-fold coverage was 0.888, mean set size 1.108, and 10.8% of predictions had both labels in their set; singleton accuracy was 0.875 versus 0.851 argmax accuracy overall. At 80%, coverage was 0.817 and 4.5% of prediction sets were empty. Confidence-ranked error was 0.074 among the most confident 50% versus 0.149 over all rows, with non-monotonic intermediate points. These estimates are exploratory and depend on exchangeability; no clinical threshold is used.
+- **Phase 12 and later:** Not started.
 
 ## Dataset
 
@@ -45,6 +46,7 @@ python run_feature_selection.py
 python run_tuning.py
 python run_ensemble.py
 python run_calibration.py
+python run_uncertainty.py
 python -m unittest discover -s tests -v
 ```
 
@@ -61,6 +63,8 @@ python -m unittest discover -s tests -v
 `run_ensemble.py` compares soft voting (Logistic Regression, KNN, Random Forest) and stacking (Logistic Regression, KNN, RBF SVC) with the constituent individual models and Random Forest. It evaluates all candidates on the same training-only stratified folds, fits preprocessing within each fold, and uses stacking's internal CV only inside the outer training fold. It saves summary and per-fold metric tables to `results/tables/ensemble_comparison.csv` and `results/tables/ensemble_folds.csv`. No holdout records are used.
 
 `run_calibration.py` compares native uncalibrated probabilities against sigmoid and isotonic `CalibratedClassifierCV` for Logistic Regression, KNN, Random Forest, and soft voting. It obtains out-of-fold predictions using five outer stratified folds, with three-fold calibration contained in each outer training fold. It writes Brier score and ROC-AUC summaries to `results/tables/calibration.csv`, binned calibration-curve points to `results/tables/calibration_curve.csv`, and `results/figures/calibration/calibration_curves.png`. It does not use the holdout or choose a threshold.
+
+`run_uncertainty.py` uses the Phase 9 soft-voting model within five outer training folds. Each outer training fold is divided into model-fit and conformal-calibration subsets; the outer validation fold remains untouched. It creates split-conformal sets using the nonconformity score `1 - p(true class)` at alpha 0.10 and 0.20, summarizes empirical coverage, set size, singleton/ambiguous/empty set rates, and selective accuracy, and measures a confidence-ranked risk-coverage curve. It writes summaries and derived out-of-fold scores under `results/tables/uncertainty*.csv`; patient-level inputs are not copied into these tables. These statistical coverage estimates assume exchangeability and are not clinical guarantees.
 
 The CSV dataset, fitted model/pipeline artifacts, split metadata, and generated EDA results are excluded from GitHub.
 
@@ -98,6 +102,10 @@ Using the same five stratified training folds as Phase 6, soft voting (Logistic 
 
 The calibration experiment generated outer-fold predictions on the 241 training rows; sigmoid/isotonic calibrators were fit only within each outer training fold using three-fold CV. Brier score is lower-is-better; ROC-AUC tracks ranking and is included to monitor discrimination changes. Mean fold Brier / ROC-AUC results were: Logistic Regression uncalibrated 0.117 / 0.908, sigmoid 0.117 / 0.908, isotonic 0.116 / 0.906; KNN uncalibrated 0.122 / 0.897, sigmoid 0.126 / 0.899, isotonic 0.127 / 0.894; Random Forest uncalibrated 0.123 / 0.902, sigmoid 0.120 / 0.899, isotonic 0.122 / 0.894; soft voting uncalibrated 0.113 / 0.913, sigmoid 0.115 / 0.908, isotonic 0.114 / 0.904. The small sample and fold variability do not establish a reliable method winner. Calibration curves use fixed-width probability bins; sparse bins make their shape noisy. No clinical threshold is applied.
 
+## Phase 11 uncertainty design and observed results
+
+The soft-voting candidate was fit on each outer fold's model-fit subset, while a disjoint calibration subset determined the finite-sample split-conformal quantile; the outer validation fold was untouched until scoring. At alpha 0.10 (nominal coverage 0.90), pooled out-of-fold empirical coverage was 0.888, mean set size 1.108, singleton rate 0.892, ambiguous two-label rate 0.108, empty-set rate 0, and singleton accuracy 0.875. At alpha 0.20 (nominal 0.80), pooled coverage was 0.817, mean set size 0.955, singleton rate 0.955, empty-set rate 0.045, and singleton accuracy 0.855. Argmax accuracy overall was 0.851. Confidence-based selective error was 0.074 among the top-confidence 50% of rows and 0.149 when retaining all rows; intermediate coverage points were not strictly monotonic. These are small-sample estimates from one dataset and depend on exchangeability; coverage is not a clinical guarantee. Non-singleton/empty sets indicate that the model abstains from a single-label prediction, not a medical referral decision.
+
 ## Key files
 
 - `src/data_loader.py` — read-only CSV loading
@@ -111,8 +119,9 @@ The calibration experiment generated outer-fold predictions on the 241 training 
 - `src/tuning.py` — training-only grid and randomized hyperparameter searches
 - `src/ensemble.py` — fold-local soft voting and stacking comparisons
 - `src/calibration.py` — nested out-of-fold probability calibration and reliability-curve evaluation
-- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py`, `run_calibration.py` — phase runners
-- `tests/` — Phase 2, 4, 5, 6, 7, 8, 9, and 10 tests
+- `src/uncertainty.py` — split-conformal prediction sets and confidence-based risk-coverage
+- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py`, `run_calibration.py`, `run_uncertainty.py` — phase runners
+- `tests/` — Phase 2, 4, 5, 6, 7, 8, 9, 10, and 11 tests
 
 ## Limitations
 
