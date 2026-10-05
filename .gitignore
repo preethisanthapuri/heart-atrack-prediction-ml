@@ -11,3 +11,8 @@ results/metrics/*.json
 results/tables/*.csv
 results/tables/dataset_audit.*
 results/tables/cleaning_report.md
+results/figures/eda/*.png
+results/tables/dataset_summary.csv
+results/tables/classwise_*.csv
+results/tables/statistical_tests.csv
+results/tables/statistical_analysis.md

@@ -2,34 +2,52 @@
 
 **Project identifier:** `heart-atrack-prediction-ml`
 
-A research-oriented project using the user-provided `heart.csv` dataset. The work is being completed in phases; results and claims will be limited to experiments actually run. This project is not a clinical diagnostic tool.
+A research-oriented project using the user-provided `heart.csv` dataset. Work proceeds in verified phases; results and claims are limited to experiments actually run. This is a research project, not a clinical diagnostic tool.
 
 ## Current progress
 
-- **Phase 1 — Dataset audit:** Complete. The supplied CSV contained 303 rows, 14 numeric columns, no parsed missing values, and one exact duplicate. `output` is the target candidate; its semantics remain to be confirmed from dataset provenance.
-- **Phase 2 — Data cleaning:** Complete. The cleaning pipeline wrote a 302-row, 14-column dataset, removed one exact duplicate, found no rows with invalid values, and retained all IQR-flagged values for review.
-- **Phase 3 and later:** Not started.
+- **Phase 1 — Dataset audit:** Complete. The supplied CSV had 303 rows and 14 numeric columns, no parsed missing values, and one exact duplicate. `output` is the target candidate; its semantics remain unconfirmed from dataset provenance.
+- **Phase 2 — Data cleaning:** Complete. Removed one exact duplicate, yielding 302 rows; no missing or invalid values were found and IQR-flagged measurements were retained.
+- **Phase 3 — EDA and statistical analysis:** Complete. Generated five figures and four tables from the cleaned dataset. In exploratory univariate tests with Benjamini-Hochberg correction, 12 of 13 predictors were associated with the observed `output` class at q < 0.05; `fbs` was not (q=0.641). These associations do not imply causality, predictive performance, or clinical validity.
+- **Phase 4 and later:** Not started.
 
-## Dataset files
+## Dataset
 
-- Original input: your local copy of `heart.csv` (not committed to GitHub)
-- Place the raw copy at `data/raw/heart_disease.csv` before running the audit or cleaning pipeline (data files are excluded from Git)
-- Cleaned data: `data/processed/cleaned_dataset.csv`
+Place the provided CSV at `data/raw/heart_disease.csv`. The raw and processed patient-level data are intentionally excluded from GitHub. Keep the original source file unchanged.
 
-## Run Phase 2
+Phase 2 creates `data/processed/cleaned_dataset.csv`. Its observed binary target candidate is `output` (classes 0 and 1). The label meaning and dataset provenance have not been independently verified.
 
-From this project directory, run:
+## Setup and run
+
+Use Python 3.10 or newer. From the project directory:
 
 ```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python run_audit.py
 python run_cleaning.py
 python -m unittest tests.test_data_cleaning -v
+python run_eda.py
 ```
 
-The run writes `results/metrics/cleaning_report.json` and `results/tables/cleaning_report.md` alongside the cleaned CSV.
+`run_eda.py` reads only `data/processed/cleaned_dataset.csv`. It writes figures to `results/figures/eda/` and tables and the statistical interpretation to `results/tables/`.
 
-## Cleaning policy
+## Phase 3 methods
 
-The pipeline checks the discovered column schema, converts values to numeric, removes rows with missing labels, imputes missing predictors (mode for encoded code columns and median for continuous predictors), checks observed encoded domains and basic measurement constraints, removes exact duplicate records, and reports constant features. It investigates continuous-variable outliers with the 1.5×IQR rule but does not remove outliers on that basis alone.
+The EDA includes target counts, feature distributions, numeric box plots by target, categorical count plots by target, and a Spearman correlation heatmap. Encoded category values are shown as ordinal in that heatmap for visualization; the categorical association tests instead use contingency tables and treat categories as labels.
 
-The dataset's clinical provenance, label definition, and measurement timing have not yet been independently verified. No predictive performance or clinical validity is claimed.
+Continuous features are compared between the two observed target classes using two-sided Mann-Whitney U tests with rank-biserial effect sizes. Encoded categorical features use Pearson chi-square, Fisher exact for sparse 2×2 tables, or a label-permutation Pearson test for sparse larger tables. Benjamini-Hochberg correction is applied across all 13 predictor tests. All tests are univariate and exploratory.
 
+## Key files
+
+- `src/data_loader.py` — read-only CSV loading
+- `src/data_cleaning.py` — audit and cleaning utilities
+- `src/eda.py` — descriptive tables and figures
+- `src/statistical_analysis.py` — univariate tests and interpretation report
+- `run_audit.py`, `run_cleaning.py`, `run_eda.py` — phase runners
+- `tests/test_data_cleaning.py` — Phase 2 unit tests
+
+## Limitations
+
+The dataset is small and from a single source. Feature definitions, measurement timing, label semantics, and provenance require confirmation. Statistical association is not a causal claim and does not establish a useful prediction model. No external validation or clinical validation has been performed.
