@@ -17,3 +17,4 @@ results/tables/classwise_*.csv
 results/tables/statistical_tests.csv
 results/tables/statistical_analysis.md
 models/*.joblib
+*.joblib
