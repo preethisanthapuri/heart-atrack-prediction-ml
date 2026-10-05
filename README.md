@@ -141,4 +141,5 @@ The soft-voting candidate was fit on each outer fold's model-fit subset, while a
 
 ## Limitations
 
-The dataset is small and from a single source. Feature definitions, measurement timing, label semantics, and provenance require confirmation. Statistical association and one holdout accuracy screen do not establish a causal relationship, robust generalization, or clinical validity. No external validation or clinical validation has been performed.
+The dataset is small and from a single source. Feature definitions, measurement timing, label semantics, and provenance require confirmation. Statistical association, internal cross-validation, a holdout accuracy screen, and an exploratory historical external-site score do not establish a causal relationship, robust generalization, or clinical validity. No prospective or clinical validation has been performed.
+
