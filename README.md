@@ -12,7 +12,8 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 4 — Preprocessing:** Complete. A stratified 80/20 split produced 241 training and 61 test observations. Preprocessing was fitted on training rows only and transformed 13 inputs into 30 features.
 - **Phase 5 — Baseline models:** Complete. Seven scikit-learn baselines were screened on the saved holdout split using accuracy only. Logistic Regression had the highest observed accuracy (**0.852; 52/61**) on this one split; this preliminary result does not establish a final model.
 - **Phase 6 — Model evaluation and cross-validation:** Complete. Seven baseline classifiers were evaluated with accuracy, precision, class-1 recall (sensitivity), class-0 specificity, F1, ROC-AUC, and average precision (PR-AUC). Five-fold stratified cross-validation ran on the 241-row training partition, with preprocessing refit inside every fold. Logistic Regression had CV ROC-AUC 0.908 ± 0.039 and accuracy 0.859 ± 0.045; KNN had the highest mean CV accuracy (0.867 ± 0.064), while Logistic Regression had the highest mean ROC-AUC. The holdout set produced descriptive results only because it had already been screened for accuracy during Phase 5.
-- **Phase 7 and later:** Not started.
+- **Phase 7 — Feature engineering and feature selection:** Complete. Compared all 30 one-hot/preprocessed features with four fold-local selection methods, each retaining 15 encoded features, for Logistic Regression and KNN. Mutual-information selection with Logistic Regression gave mean CV ROC-AUC 0.914 ± 0.040 and PR-AUC 0.926 ± 0.022, versus 0.908 ± 0.039 and 0.919 ± 0.027 using all features; its accuracy was lower (0.847 ± 0.060 vs 0.859 ± 0.045). The small metric differences do not establish a meaningful improvement. No manually derived clinical interaction or ratio features were added because feature definitions, units, and provenance are not verified.
+- **Phase 8 and later:** Not started.
 
 ## Dataset
 
@@ -37,6 +38,7 @@ python -m unittest tests.test_preprocessing -v
 python run_baselines.py
 python -m unittest tests.test_models -v
 python run_model_evaluation.py
+python run_feature_selection.py
 python -m unittest discover -s tests -v
 ```
 
@@ -45,6 +47,8 @@ python -m unittest discover -s tests -v
 `run_preprocessing.py` recreates the stratified split and fits transformations on training rows only. It writes `models/preprocessing_pipeline.joblib` and `results/metrics/preprocessing_split.json`.
 
 `run_baselines.py` loads those Phase 4 artifacts, fits the baseline classifiers on the training partition, saves fitted classifiers under `models/baselines/`, and writes the aggregate holdout accuracy screen to `results/tables/baseline_screening.csv`. `run_model_evaluation.py` writes `results/tables/model_comparison.csv`, `results/tables/cross_validation.csv`, and nine confusion-matrix, ROC, and precision-recall figures. Cross-validation uses only the training partition and fits preprocessing within each fold. Holdout figures and metrics are descriptive because Phase 5 already screened this same split for accuracy; no test-set tuning was performed and no final model is selected in Phase 6.
+
+`run_feature_selection.py` compares all one-hot-expanded inputs with 15-feature selections using mutual information, ANOVA SelectKBest, Logistic Regression RFE, and an Extra Trees model-based selector. It evaluates both Logistic Regression and KNN using the Phase 6 stratified folds on training data only. Preprocessing and feature selection are refitted inside every fold. It saves CV metrics to `results/tables/feature_selection_comparison.csv` and selector rank/fold-stability information to `results/tables/feature_selection.csv`. The holdout set is not used by this experiment.
 
 The CSV dataset, fitted model/pipeline artifacts, split metadata, and generated EDA results are excluded from GitHub.
 
@@ -66,6 +70,10 @@ The screen compares Logistic Regression, K-Nearest Neighbors, Decision Tree, RBF
 
 Metrics treat the numeric target value `1` as the positive class and `0` as the negative class; the clinical meaning of those values is not verified. Specificity is the true-negative rate for class 0. PR-AUC is reported as average precision. Five-fold CV reports the unweighted mean and sample standard deviation across folds. On this run, Logistic Regression had CV ROC-AUC 0.908 ± 0.039; KNN had mean CV accuracy 0.867 ± 0.064. On the previously screened holdout, Logistic Regression had accuracy 0.852, recall 0.879, specificity 0.821, and ROC-AUC 0.897. These small-sample estimates are exploratory and do not establish clinical performance or model superiority.
 
+## Phase 7 feature selection design and observed results
+
+The input schema expands to 30 features after one-hot encoding. A fixed budget of 15 encoded features was applied to mutual-information SelectKBest, ANOVA SelectKBest, Logistic Regression RFE, and Extra Trees SelectFromModel. Each selector was fit only on its current training fold; the same five stratified folds compare the full feature set and selected sets. The strongest selected Logistic Regression ROC-AUC was 0.914 ± 0.040 (mutual information), versus 0.908 ± 0.039 using all 30 features; selected-set accuracy was 0.847 ± 0.060 versus 0.859 ± 0.045. For KNN, using all features had the highest mean CV accuracy (0.867 ± 0.064). These are exploratory estimates from 241 training rows; no selector is established as superior. Feature rankings and fold-selection rates are not evidence of causality or clinical importance.
+
 ## Key files
 
 - `src/data_loader.py` — read-only CSV loading
@@ -74,9 +82,10 @@ Metrics treat the numeric target value `1` as the positive class and `0` as the 
 - `src/statistical_analysis.py` — univariate tests and interpretation report
 - `src/preprocessing.py` — split and reusable leakage-safe preprocessing pipeline
 - `src/models.py` — baseline classifier definitions
-- `src/evaluation.py` — baseline screening, heldout metrics, cross-validation, and plots
-- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py` — phase runners
-- `tests/` — Phase 2, 4, 5, and 6 tests
+- `src/evaluation.py` — baseline screening, holdout metrics, cross-validation, and plots
+- `src/feature_selection.py` — fold-local feature-selection experiment and stability summaries
+- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py` — phase runners
+- `tests/` — Phase 2, 4, 5, 6, and 7 tests
 
 ## Limitations
 
