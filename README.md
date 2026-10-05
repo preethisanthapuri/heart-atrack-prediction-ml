@@ -24,12 +24,24 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 16 — Web application:** Complete. Added a Flask research interface backed by the saved Stage B raw-input pipeline. It validates all 13 fields and category codes, warns when numeric inputs are outside the observed training range, displays dataset-class probabilities and local Logistic Regression contributions, and explicitly reports that Stage-B uncertainty is not estimated. This is not a medical diagnostic tool. See `app/`.
 - **Phase 17 — Testing and final results:** Complete. The complete suite passed (38 tests); the Flask API was smoke-tested against the saved model. The final-results runner reconciles recorded experiment tables with final-model metadata and writes a consolidated evidence CSV, table catalog, publication-ready baseline/ablation figures, machine-readable summary, and `paper/final_results.md`. No model fitting was repeated for this synthesis. All reported evidence is qualified by split, class-code, and provenance limitations.
 - **Phase 18 — Literature review and research gap:** Complete. Added a focused, explicitly non-systematic scholarly review and a bounded gap/claim assessment in paper/literature_review.md and paper/research_gap.md. The review documents why the supplied 0/1 target cannot yet be asserted to mean heart disease or heart attack, distinguishes this diagnostic-style benchmark from prospective risk prediction, and finds no support for algorithmic novelty or clinical validity. The defensible contribution is a reproducible, leakage-aware empirical comparison with transparent tradeoffs and limitations. These files do not resolve dataset provenance or constitute a systematic review.
+- **Phase 19 — IEEE paper draft:** Complete as a research manuscript draft in `paper/ieee_paper.md`. It includes only implemented work and recorded results, with unresolved endpoint and evaluation limits stated. It has not been formatted to a selected conference template or approved by authors.
+- **Phase 20 — Final documentation and readiness:** Complete. Added a viva preparation guide and a publication-readiness assessment. The 11-slide editable viva deck is `outputs/phase20/heart-atrack-prediction-ml-viva.pptx`. The assessment identifies provenance, endpoint semantics, holdout screening, Stage B external validation, manuscript formatting, and author declarations as unresolved submission items. No experiments were rerun for this documentation phase.
 
 ## Dataset
 
 Place the provided CSV at `data/raw/heart_disease.csv`. The raw and processed patient-level data are intentionally excluded from GitHub. Keep the original source file unchanged.
 
 Phase 2 creates `data/processed/cleaned_dataset.csv`. Its observed binary target candidate is `output` (classes 0 and 1). The label meaning and dataset provenance have not been independently verified.
+
+## Research and viva documents
+
+- IEEE manuscript draft: `paper/ieee_paper.md`
+- Literature review and research gap: `paper/literature_review.md` and `paper/research_gap.md`
+- Viva questions and evidence summary: `paper/viva_guide.md`
+- Publication-readiness checklist: `paper/publication_readiness.md`
+- Viva slides: `outputs/phase20/heart-atrack-prediction-ml-viva.pptx`
+
+The manuscript and slide deck describe an exploratory dataset-class benchmark. They do not establish heart-attack prediction, clinical validity, or IEEE acceptance. Before submission, verify dataset provenance and label meaning, select a conference and apply its current template, verify references, and complete author and institutional declarations.
 
 ## Setup and run
 
