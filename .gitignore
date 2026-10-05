@@ -13,6 +13,7 @@ results/tables/dataset_audit.*
 results/tables/cleaning_report.md
 results/figures/eda/*.png
 results/figures/models/*.png
+results/figures/shap/*.png
 results/tables/dataset_summary.csv
 results/tables/classwise_*.csv
 results/tables/statistical_tests.csv

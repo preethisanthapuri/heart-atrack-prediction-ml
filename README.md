@@ -17,7 +17,8 @@ A research-oriented project using the user-provided `heart.csv` dataset. Work pr
 - **Phase 9 — Ensemble learning:** Complete. Evaluated soft voting (Logistic Regression, KNN, Random Forest) and stacking (Logistic Regression, KNN, RBF SVC) against individual baselines on identical training-only stratified folds. Soft voting had mean ROC-AUC 0.913 ± 0.045, compared with 0.908 ± 0.039 for Logistic Regression; its mean accuracy was 0.851, below KNN at 0.867. Stacking had ROC-AUC 0.909 ± 0.040 and accuracy 0.847. Evidence does not establish a broad or reliable ensemble improvement; soft voting remains an experimental comparator only.
 - **Phase 10 — Probability calibration:** Complete. Compared uncalibrated probabilities with sigmoid and isotonic `CalibratedClassifierCV` using outer five-fold out-of-fold predictions and three-fold calibration internal to each outer training fold. Brier score and ROC-AUC were recorded, with calibration curves. Calibration did not help consistently: raw soft voting had the lowest Brier score (0.113), while sigmoid reduced Random Forest Brier from 0.123 to 0.120 and isotonic reduced Logistic Regression Brier from 0.117 to 0.116. The other model-method pairs were unchanged or worse. No single calibration method is retained as universally preferable.
 - **Phase 11 — Uncertainty-aware prediction:** Complete. Evaluated split-conformal class sets from soft-voting probabilities with 90% and 80% nominal coverage, plus confidence-based risk-coverage. At 90% nominal coverage, observed out-of-fold coverage was 0.888, mean set size 1.108, and 10.8% of predictions had both labels in their set; singleton accuracy was 0.875 versus 0.851 argmax accuracy overall. At 80%, coverage was 0.817 and 4.5% of prediction sets were empty. Confidence-ranked error was 0.074 among the most confident 50% versus 0.149 over all rows, with non-monotonic intermediate points. These estimates are exploratory and depend on exchangeability; no clinical threshold is used.
-- **Phase 12 and later:** Not started.
+- **Phase 12 — SHAP explainability:** Complete. `shap.LinearExplainer` explained the saved Phase 6 Logistic Regression model on its 241 training rows using a deterministic 100-row training background and the saved training-fitted preprocessor. Global mean absolute SHAP values ranked `cp_0`, `caa_0`, `thall_2`, `chol`, and `oldpeak` highest for this fitted model (log-odds scale). The selected training row (dataset index 110) had class-1 probability 0.649; its largest absolute contributions were `chol` (-0.880 log-odds), `trtbps` (-0.729), and `cp_0` (-0.684). Unit tests confirmed SHAP additivity to the model decision function. These are model-output associations, not causal or clinical effects; explanations were generated on training rows and do not validate generalization.
+- **Phase 13 and later:** Not started.
 
 ## Dataset
 
@@ -65,6 +66,8 @@ python -m unittest discover -s tests -v
 `run_calibration.py` compares native uncalibrated probabilities against sigmoid and isotonic `CalibratedClassifierCV` for Logistic Regression, KNN, Random Forest, and soft voting. It obtains out-of-fold predictions using five outer stratified folds, with three-fold calibration contained in each outer training fold. It writes Brier score and ROC-AUC summaries to `results/tables/calibration.csv`, binned calibration-curve points to `results/tables/calibration_curve.csv`, and `results/figures/calibration/calibration_curves.png`. It does not use the holdout or choose a threshold.
 
 `run_uncertainty.py` uses the Phase 9 soft-voting model within five outer training folds. Each outer training fold is divided into model-fit and conformal-calibration subsets; the outer validation fold remains untouched. It creates split-conformal sets using the nonconformity score `1 - p(true class)` at alpha 0.10 and 0.20, summarizes empirical coverage, set size, singleton/ambiguous/empty set rates, and selective accuracy, and measures a confidence-ranked risk-coverage curve. It writes summaries and derived out-of-fold scores under `results/tables/uncertainty*.csv`; patient-level inputs are not copied into these tables. These statistical coverage estimates assume exchangeability and are not clinical guarantees.
+
+`run_explainability.py` uses the saved Phase 6 Logistic Regression baseline and Phase 4 preprocessor to compute SHAP LinearExplainer values in log-odds space. It explains training partition rows only, with a reproducible background sample of up to 100 training rows, and saves global/local contribution tables, a local prediction metadata JSON, a beeswarm summary, a global bar plot, and a local waterfall under `results/`. SHAP contributions explain the fitted model's outputs; they are neither causal effects nor evidence of clinical validity.
 
 The CSV dataset, fitted model/pipeline artifacts, split metadata, and generated EDA results are excluded from GitHub.
 
@@ -120,8 +123,9 @@ The soft-voting candidate was fit on each outer fold's model-fit subset, while a
 - `src/ensemble.py` — fold-local soft voting and stacking comparisons
 - `src/calibration.py` — nested out-of-fold probability calibration and reliability-curve evaluation
 - `src/uncertainty.py` — split-conformal prediction sets and confidence-based risk-coverage
-- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py`, `run_calibration.py`, `run_uncertainty.py` — phase runners
-- `tests/` — Phase 2, 4, 5, 6, 7, 8, 9, 10, and 11 tests
+- `src/explainability.py` — training-partition SHAP global/local explanations for Logistic Regression
+- `run_audit.py`, `run_cleaning.py`, `run_eda.py`, `run_preprocessing.py`, `run_baselines.py`, `run_model_evaluation.py`, `run_feature_selection.py`, `run_tuning.py`, `run_ensemble.py`, `run_calibration.py`, `run_uncertainty.py`, `run_explainability.py` — phase runners
+- `tests/` — Phase 2, 4–12 tests
 
 ## Limitations
 
