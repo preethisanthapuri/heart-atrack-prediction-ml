@@ -15,6 +15,6 @@ if __name__ == "__main__":
     )
     print("Holdout comparison:")
     print(result["holdout_results"].to_string(index=False))
-    print("\n5-fold CV mean ± SD:")
+    print("\n5-fold CV mean / sample SD:")
     print(result["cross_validation_results"].to_string(index=False))
     print(f"Generated {len(result['figure_paths'])} evaluation figures")
