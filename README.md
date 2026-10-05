@@ -60,6 +60,8 @@ python -m unittest tests.test_preprocessing -v
 python run_baselines.py
 python -m unittest tests.test_models -v
 python run_model_evaluation.py
+python run_explainability.py
+python run_external_validation.py
 python run_feature_selection.py
 python run_tuning.py
 python run_ensemble.py
